@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=ACD About
+Comment=Shows information about the ACD-1
+Icon=/usr/share/pixmaps/acd-about.xpm
+Exec=/usr/bin/acd-about
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=GTK;System;TerminalEmulator;

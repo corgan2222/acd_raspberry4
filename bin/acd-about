@@ -1,0 +1,25 @@
+
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+
+acd_version=$(cat /etc/acd_version)
+distribution=$(lsb_release -i)
+release=$(lsb_release -r)
+codename=$(lsb_release -c)
+linuxkernel="Linux Kernel "$(uname -r)
+gphoto=$(gphoto2 --version | grep -n "gphoto2" -m 1 | cut -d: -f2)
+libgphoto=$(gphoto2 --version | grep  "libgphoto2" -m 1)
+welcome_text="Advanced Camera Device is a camera control, backup system in one.\n\
+For more information see https://www.multimedia4linux.de\nCopyright 2018/2019 Holger Klemm"
+
+zenity --info --title="About ACD" --width 650 --text="$welcome_text\n\n$acd_version\n$distribution\n$release\n$codename\n$gphoto\n$libgphoto"
+  

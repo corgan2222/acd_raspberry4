@@ -1,0 +1,122 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# Remove tmp file
+if [ -f /tmp/gphoto2_camera.info ]
+  then
+    rm /tmp/gphoto2_camera.info
+fi
+# Check if ssd is ready
+if [ ! -e "/dev/acd-ssd" ]; then
+  zenity --error --width 600  --text="SSD not found. Please ckeck the usb connection and reboot the device." 
+  exit 1 
+else
+  grep /var/ssd /etc/mtab
+    if [ "$?" -ne "0" ]; then
+        /usr/bin/sudo -u pi /usr/bin/udisksctl mount -b /dev/acd-ssd
+        if [ "$?" -ne "0" ]; then
+          zenity --error --width 600  --text="SSD mounting not posible. Please ckeck the ssd." 
+          exit 1
+        fi
+    fi  
+fi
+# Check if camera/sd-card is ready
+gphoto2 --auto-detect --storage-info
+if [ "$?" -ne "0" ]; then
+   if [ -e "/dev/acd-cardreader" ]; then
+        /usr/bin/sudo -u pi /usr/bin/udisksctl mount -b /dev/acd-cardreader
+         if [ "$?" -ne "0" ]; then
+            zenity --error --width 600  --text="No flashcard found. Please ckeck the USB connection / cardreader." 
+            exit 1
+         fi
+   else
+     zenity --error --width 600  --text="No flashcard found. Please ckeck the usb connection / cardreader."
+     exit 1
+   fi
+fi
+
+
+device=$(blkid -o list -w /dev/null | grep /var/ssd | cut -d ' ' -f 1)
+if [ -z "$device" ]; then
+  device=$(grep "/var/ssd" /etc/mtab | cut -d ' ' -f 1)
+fi
+
+if [ -n "$device" ]; then
+   grep $device /etc/mtab
+   if [ "$?" -eq "0" ]; then
+       cd /var/ssd
+       echo "SSD Info:" > /tmp/gphoto2_camera.info
+       echo "---------------------------------------------" >> /tmp/gphoto2_camera.info
+       discspace=$(df -hm | grep $device | awk '{print $2}')
+       freediscspace=$(df -hm | grep $device | awk '{print $4}')
+       percentfreediscspace=$(df -hm | grep $device | awk '{print $5}')
+       countfiles=$(find /var/ssd -type f | wc -l)
+       echo "disc space      "$discspace" Mb" >> /tmp/gphoto2_camera.info
+       echo "free space      "$freediscspace" Mb ("$percentfreediscspace")" >> /tmp/gphoto2_camera.info
+       echo "backed up files "$countfiles >> /tmp/gphoto2_camera.info
+       echo " " >> /tmp/gphoto2_camera.info
+       echo "Camera or sd-card info:" >> /tmp/gphoto2_camera.info
+       echo "---------------------------------------------" >> /tmp/gphoto2_camera.info
+       countimages=$(gphoto2 --port usb: -L --stdout | wc -l)
+       echo "files "$countimages >> /tmp/gphoto2_camera.info
+       echo "backup filename settings (~./gphoto/settings)" >> /tmp/gphoto2_camera.info
+       more ~/.gphoto/settings | grep gphoto2=filename >> /tmp/gphoto2_camera.info
+       gphoto2 --auto-detect --storage-info >> /tmp/gphoto2_camera.info
+       if [ "$?" -eq "0" ]; then
+          clear
+          zenity --text-info --title="Camera/Cardreader Backup Info" --width 600 --height 400 --filename=/tmp/gphoto2_camera.info  
+          if [ "$?" -eq "0" ]; then
+            gphoto2 --auto-detect --get-all-files --skip-existing | tee >(zenity --progress --pulsate --title="Creating backup" --text="Save files. Please wait..." --auto-close --auto-kill --width 600)
+              if [ "$?" -eq "0" ]; then
+                    zerofiles=$(find * -empty -type f | wc -l)
+                   if [ "$zerofiles" -eq "0" ]; then
+                     zenity --info --text="The files were backed up successfully" --width 600
+                   else
+                     zenity --error --text="$zerofiles files with 0 bytes found. Please check the backup." --width 600
+                   fi
+                /usr/bin/sudo -u pi /usr/bin/udisksctl unmount -b /dev/acd-cardreader
+                exit
+              else
+                zenity --error --text="Backup has been aborted or an error has occurred" --width 600
+                rm /var/ssd/tmpfile*
+                /usr/bin/sudo -u pi /usr/bin/udisksctl unmount -b /dev/acd-cardreader
+                exit
+              fi
+         else
+            /usr/bin/sudo -u pi /usr/bin/udisksctl unmount -b /dev/acd-cardreader
+            exit
+         fi
+       else
+        zenity --error --text="No storge device found. Please turn on the camera or insert the SD card into the card reader." --width 600
+        /usr/bin/sudo -u pi /usr/bin/udisksctl unmount -b /dev/acd-cardreader
+       exit
+       fi
+    else
+      sudo mount /dev/acd-ssd
+      if [ "$?" -eq "0" ]; then 
+          acd-backup
+      else
+         zenity --error --text="Can't mount the SSD. Please check the mountpoint." --width 600
+      fi
+ 
+    fi
+else
+ zenity --error --text="SSD not found. Please check the USB cable." --width 600
+fi
+
+cd /var/ssd
+zerofiles=$(find * -size 0 -ls | wc -l)
+
+if [ "$zerofiles" -ne "0" ]; then
+zenity --error --text="Backup error. $zerofiles files with 0 bytes found." --width 600
+
+fi
+/usr/bin/sudo -u pi /usr/bin/udisksctl unmount -b /dev/acd-cardreader

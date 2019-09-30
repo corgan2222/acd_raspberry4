@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+device=""
+#Safty question
+zenity --question --text="Formatting deletes all data. Do you want to do that?" --title="Safty question" --width 600
+#Wenn okay geklickt wurde dann
+if [ "$?" -eq "0" ]; then
+   grep "/var/ssd" /etc/mtab
+   #Wenn SSD gemounted ist dann, aushängen
+   if [ "$?" -eq "0" ]; then
+      #Prozess start
+      (
+      echo "10"
+      sudo /usr/bin/udisksctl unmount -b /dev/acd-ssd
+      #Prüfen, ob SSD erfolgreich ausgehängt wurde
+         if [ "$?" -eq "0" ]; then
+            echo "20"
+            #Formatieren der SSD
+            sudo mkfs.exfat -n "ACD-SSD" -s 512 /dev/acd-ssd
+            #Prüfen, ob Formatierung erfolgreich
+            if [ "$?" -eq "0" ];then
+               echo "80"
+               #Mounten der formatierten SSD
+               sudo /usr/bin/udisksctl mount -b /dev/acd-ssd
+               #Prüfen, ob SSD erfolgreich eingebunden wurde
+               if [ "$?" -ne "0" ]; then
+                  zenity --error --text="Mounting error. Please ckeck the ssd, USB-connection and reboot." --width 600
+                  exit 8
+               fi
+               echo "100"
+            else  
+               echo "100"
+               zenity --error --text="Formating error. Please ckeck the ssd." --width 600
+               exit 9
+            fi
+        else
+          echo "100"    
+          zenity --error --text="SSD device is busy. umounting / formating not possible" --width 600
+          exit 10
+        fi
+       #  sudo /usr/bin/udisksctl mount -b /dev/acd-ssd
+    ) |
+    zenity --progress --width=400 --title="Formating" --text="Formating ssd ..." --percentage=0 --auto-close
+    zenity --info --text="The SSD has been successfully formatted." --width 600
+   #SSD ist nicht eingebunden,  
+   elif [ "$?" -eq "1" ]; then
+      #Prüfen, ob Block Device für SSD vorhanden ist
+      if [ -b "/dev/acd-ssd" ]; then
+         #Block Bevice ist vorhanden, USB Verbindung existiert
+         #Prozess start
+         (
+         echo "20"
+         sudo mkfs.exfat -n "ACD-SSD" -s 512 /dev/acd-ssd
+         #Prüfen, ob Formatierung erfolgreich
+         if [ "$?" -eq "0" ];then
+               echo "80"
+               #Mounten der formatierten SSD
+               sudo /usr/bin/udisksctl mount -b /dev/acd-ssd
+               #Prüfen, ob SSD erfolgreich eingebunden wurde
+               if [ "$?" -ne "0" ]; then
+                  zenity --error --text="Mounting error. Please ckeck the USB-connection and reboot." --width 600
+                  exit 8
+               fi
+               echo "100"
+         else  
+            echo "100"
+            zenity --error --text="Formating error. Please ckeck the ssd and USB-connection." --width 600
+            exit 9
+         fi
+         ) |
+         zenity --progress --width=400 --title="Formating" --text="Formating ssd ..." --percentage=0 --auto-close
+         zenity --info --text="The SSD has been successfully formatted." --width 600
+      else
+         #Link /dev/acd-ssd existiert nicht, keine USB Verbindung
+         zenity --error --text="SSD not found. Please ckeck the USB-connection." --width 600
+         exit 7
+      fi    
+  fi  
+fi
+#Wenn Cancel geklickt wurde dann...
+exit 0

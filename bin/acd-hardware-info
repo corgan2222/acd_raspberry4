@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+device=$(blkid -o list -w /dev/null | grep /var/ssd | cut -d ' ' -f 1)
+raspberrypi=$(cat /proc/device-tree/model)
+soc=$(cat /proc/cpuinfo | grep "Hardware" | cut -d: -f2 | cut -d" " -f2)
+cpu=$(cat /proc/cpuinfo | grep "model name" -m 1 | cut -d: -f2)
+cpu_temp=$(vcgencmd measure_temp | cut -d= -f2)
+cpu_freq=$(vcgencmd get_config int | grep "arm_freq" | cut -d= -f2)
+cpu_ram=$(vcgencmd get_mem arm | cut -d= -f2)
+gpu_ram=$(vcgencmd get_mem gpu | cut -d= -f2)
+mpg4_licence=$(vcgencmd codec_enabled MPG4)
+if [ "$mpg4_licence" == "MPG4=enabled" ]; then
+   mpg4_licence="supported"
+else
+   mpg4_licence="no licence"
+fi
+
+mpg2_licence=$(vcgencmd codec_enabled MPG2)
+if [ "$mpg2_licence" == "MPG2=enabled" ]; then
+   mpg2_licence="supported"
+else
+   mpg2_licence="no licence"
+fi
+
+wvc1_licence=$(vcgencmd codec_enabled WVC1)
+if [ "$wvc1_licence" == "WVC1=enabled" ]; then
+   wvc1_licence="supported"
+else
+   wvc1_licence="no licence"
+fi
+
+display=$(tvservice -n | cut -d= -f2)
+if [ -z "$display" ]; then
+   display="HyperPixel 4.0"
+fi
+display_hor=$(vcgencmd get_lcd_info | cut -d" " -f1)
+display_vert=$(vcgencmd get_lcd_info | cut -d" " -f2)
+sd_card=$(df -H / | grep "root" | cut -d" " -f8)b
+grep "/var/ssd" /etc/mtab
+if [ "$?" -eq "0" ]; then
+   ssd_discspace=$(df -H | grep $device | awk '{print $2}')b
+else
+   ssd_discspace="SSD not found"
+   devices=$(lsblk)
+fi
+#infotext="Model:	$raspberrypi\nSoC:	$soc\nCPU:	$cpu\nCPU temp.:	$cpu_temp\nCPU clock:	$cpu_freq Hz\n\
+#GPU RAM:	$cpu_ram\nGPU RAM:	$gpu_ram\nDisplay:	$display\nDisplay resolution: $display_hor x $display_vert\n\
+#micro-SD size:	$sd_card\nSSD size:		$ssd_discspace\n$devices"   
+
+
+infotext="Model: $raspberrypi\nSoC: $soc\t\t\tCPU: $cpu\n\
+CPU clock: $cpu_freq Hz\t\tCPU temp.: $cpu_temp\n\
+CPU RAM: $cpu_ram\t\t\tGPU RAM: $gpu_ram\n\
+Display: $display\tDisplay resolution: $display_hor x $display_vert\n\
+micro-SD size: $sd_card\t\tSSD size: $ssd_discspace\n$devices\n\
+MPEG-4 Hardware decoding: $mpg4_licence\n\
+MPEG-2 Hardware decoding: $mpg2_licence\n\
+VC-1 Hardware decoding: $wvc1_licence"
+
+zenity --info --title="ACD Hardware" --width 600 --text="$infotext"

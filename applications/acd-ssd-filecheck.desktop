@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=SSD Filesystemcheck
+Comment=Checkes the internal SSD
+Icon=/usr/share/pixmaps/acd-ssd-filesystemcheck.xpm
+Exec=/usr/bin/acd-ssd-filesystemcheck
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=GTK;System;TerminalEmulator;

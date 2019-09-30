@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+if [ -f /usr/bin/qDslrDashboard ]
+then
+sed -i 's/autohide=0/autohide=1/g' /home/pi/.config/lxpanel/LXDE-pi/panels/panel
+lxpanelctl restart
+sleep 3s
+qDslrDashboard.sh
+sleep 1s
+sed -i 's/autohide=1/autohide=0/g' /home/pi/.config/lxpanel/LXDE-pi/panels/panel
+lxpanelctl restart
+else
+  sudo /usr/bin/qDslrDashboard-installer
+fi

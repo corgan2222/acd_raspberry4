@@ -1,0 +1,261 @@
+#!/bin/bash
+#
+# Copyright (C) 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# Wechsel in das Verzeichnis wo gphoto die Daten abspeichern soll
+set -x
+#set -u
+# Remove tmp file
+if [ -f /tmp/gphoto2_wifi_camera.info ]
+	then
+		rm /tmp/gphoto2_wifi_camera.info
+fi
+
+(
+# Check if ssd is ready
+if [ ! -e "/dev/acd-ssd" ]; then
+  zenity --error --width 600  --text="SSD not found. Please ckeck the usb connection and reboot the device." 
+  exit 1 
+else
+  grep /var/ssd /etc/mtab
+    if [ "$?" -ne "0" ]; then
+        /usr/bin/sudo -u pi /usr/bin/udisksctl mount -b /dev/acd-ssd
+        if [ "$?" -ne "0" ]; then
+          zenity --error --width 600  --text="SSD mounting not posible. Please ckeck the ssd." 
+          exit 1
+        fi
+    fi
+fi
+echo 5
+
+device=$(blkid -o list -w /dev/null | grep /var/ssd | cut -d ' ' -f 1)
+if [ -z "$device" ]; then
+  device=$(grep "/var/ssd" /etc/mtab | cut -d ' ' -f 1)
+fi
+
+if [ -n "$device" ]; then
+   grep $device /etc/mtab
+   if [ "$?" -eq "0" ]; then
+       cd /var/ssd
+       echo "SSD Info:" > /tmp/gphoto2_wifi_camera.info
+       echo "---------------------------------------------" >> /tmp/gphoto2_wifi_camera.info
+       discspace=$(df -hm | grep $device | awk '{print $2}')
+       freediscspace=$(df -hm | grep $device | awk '{print $4}')
+       percentfreediscspace=$(df -hm | grep $device | awk '{print $5}')
+       countfiles=$(find /var/ssd -type f | wc -l)
+       echo "disc space      "$discspace" Mb" >> /tmp/gphoto2_wifi_camera.info
+       echo "free space      "$freediscspace" Mb ("$percentfreediscspace")" >> /tmp/gphoto2_wifi_camera.info
+       echo "backed up files "$countfiles >> /tmp/gphoto2_wifi_camera.info
+       echo " " >> /tmp/gphoto2_wifi_camera.info
+       echo "Camera info:" >> /tmp/gphoto2_wifi_camera.info
+       echo "---------------------------------------------" >> /tmp/gphoto2_wifi_camera.info
+       
+echo 10
+#WLAN Verbindung prüfen
+       echo "# Checking wifi connection..."
+       for (( i=1 ; i<61 ; i++ ))
+        do
+        iwgetid > /dev/null
+        if [ "$?" -eq "0" ]; then 
+           wlan_connection=$(iwgetid | cut -d \" -f2)
+           i=60
+        else
+           if [ "$i" -eq "60" ]; then
+             echo 100
+             zenity --error --title="Wifi camera backup"  --text="No wifi connection found. Please check the camera connection." --width 600
+             rm /tmp/gphoto2_wifi_camera.info
+             exit 1
+           fi
+           sleep 1s
+           echo 15
+        fi
+       done
+       echo "Connected to $wlan_connection"
+       echo "# Wifi connection $wlan_connection found"
+       wlan_connection=$(iwgetid | cut -d \" -f2) 
+       echo "Wifi connection: $wlan_connection" >> /tmp/gphoto2_wifi_camera.info
+       echo 20      
+
+#IP Adresse der Kamera ermitteln
+       echo "# Identify camera ip adress..."
+       echo 20
+       for (( k=1 ; k<61 ; k++ ))
+         do 
+         route > /dev/null
+            if [ "$?" -eq "0" ]; then 
+              camera_ip_adress=$(route | grep wlan0 | awk -F";" 'NR == 1 { print $1}' | awk '{print $2}')
+              k=60
+            else
+              if [ "$k" -eq "60" ]; then
+              echo 100
+              zenity --error --title="Wifi camera backup"  --text="No camera ip adress found. Please check the camera." --width 600 
+              exit 1
+              fi
+              sleep 1s
+              echo 25
+           fi
+         done
+         camera_ip_adress=$(route | grep wlan0 | awk -F";" 'NR == 1 { print $1}' | awk '{print $2}')
+         echo "# Camera ip is $camera_ip_adress"
+         echo 30
+         echo "Camera ip adress: $camera_ip_adress" >> /tmp/gphoto2_wifi_camera.info
+         echo " " >> /tmp/gphoto2_wifi_camera.info
+ 
+ 
+#Zusammerfassung der Kamera anzeigen
+         echo "# Reading camera informations..." 
+         echo 35
+         for (( y=1 ; y<61 ; y++ ))
+               do
+                 ping -c 1 $camera_ip_adress 
+                 if [ "$?" -eq "0" ]; then 
+                   y=60
+                 else
+                   if [ "$y" -eq "50" ]; then
+                     echo 100
+                     zenity --error --title="Wifi remote trigger"  --text="Wi-Fi connection was interrupted. Please check the camera sleep function." --width 600
+                     exit 1
+                   fi
+                   sleep 1s
+                   echo 40
+                 fi
+               done
+ echo 45
+   
+# Anzahl der Bilder auf der SD-Karte ermitteln
+       countimages=$(gphoto2 --port ptpip:$camera_ip_adress -L --stdout | wc -l)
+       echo "files "$countimages >> /tmp/gphoto2_wifi_camera.info
+       echo "backup filename settings (~./gphoto/settings)" >> /tmp/gphoto2_wifi_camera.info
+       more ~/.gphoto/settings | grep gphoto2=filename >> /tmp/gphoto2_wifi_camera.info
+echo 50
+# Speicher Infos
+       echo "# Reading sd card informations..."
+       echo 55
+       for (( h=1 ; h<61 ; h++ ))
+             do
+               ping -c 1 $camera_ip_adress 
+               if [ "$?" -eq "0" ]; then 
+                h=60
+               else
+                 if [ "$h" -eq "60" ]; then
+                   echo 100
+                   zenity --error --title="Wifi remote trigger"  --text="Wi-Fi connection was interrupted. Please check the camera sleep function." --width 600
+                   exit 1
+                 fi
+                 echo 60
+                 sleep 1s
+               fi
+             done
+       gphoto2 --port ptpip:$camera_ip_adress --storage-info >> /tmp/gphoto2_wifi_camera.info
+       echo 80
+    fi
+fi
+) | tee >(zenity --progress --percentage=0 --title="Creating backup" --text="Check wifi connection and create backup information. Please wait..." --auto-close --auto-kill --width 600)
+
+zenity --text-info --title="Wifi camera backup info" --width 600 --height 400 --filename=/tmp/gphoto2_wifi_camera.info
+
+
+if [ "$?" -eq "0" ]; then #Es wurde okay geklickt
+(
+    rm /tmp/gphoto2_wifi_camera.info #Info Daten löschen
+
+WLAN Verbindung prüfen
+ echo "# Checking wifi connection..."
+ for (( i=1 ; i<61 ; i++ ))
+  do
+     iwgetid > /dev/null
+     if [ "$?" -eq "0" ]; then 
+       wlan_connection=$(iwgetid | cut -d \" -f2)
+       i=60
+     else
+       if [ "$i" -eq "60" ]; then
+          echo 100
+          zenity --error --title="Wifi camera backup"  --text="No wifi connection found. Please check the camera connection." --width 600
+          rm /tmp/gphoto2_wifi_camera.info
+          sudo kill -9 $$
+       fi
+       sleep 1s
+       echo 15
+     fi
+  done
+echo "Connected to $wlan_connection"
+echo "# Wifi connection $wlan_connection found"
+wlan_connection=$(iwgetid | cut -d \" -f2) 
+echo "Wifi connection: $wlan_connection" >> /tmp/gphoto2_wifi_camera.info
+echo "# Wifo connection $wlan_connection found"
+echo 20
+
+#IP Adresse der Kamera ermitteln
+echo "# Identify camera ip adress..."
+echo 20
+for (( k=1 ; k<61 ; k++ ))
+     do 
+       route > /dev/null
+       if [ "$?" -eq "0" ]; then 
+         camera_ip_adress=$(route | grep wlan0 | awk -F";" 'NR == 1 { print $1}' | awk '{print $2}')
+         k=60
+       else
+         if [ "$k" -eq "60" ]; then
+            echo 100
+            zenity --error --title="Wifi camera backup"  --text="No camera ip adress found. Please check the camera." --width 600 
+            sudo kill -9 $$
+         fi
+         sleep 1s
+         echo 20
+       fi
+      done
+camera_ip_adress=$(route | grep wlan0 | awk -F";" 'NR == 1 { print $1}' | awk '{print $2}')
+echo "# Camera ip is $camera_ip_adress"
+echo 40
+
+echo "# Reading camera informations..." 
+echo 40
+for (( y=1 ; y<61 ; y++ ))
+      do
+        ping -c 1 $camera_ip_adress 
+        if [ "$?" -eq "0" ]; then 
+         y=60
+        else
+          if [ "$y" -eq "50" ]; then
+            echo 100
+            zenity --error --title="Wifi remote trigger"  --text="Wi-Fi connection was interrupted. Please check the camera sleep function." --width 600
+            sudo kill -9 $$
+          fi
+          sleep 1s
+          echo 40
+        fi
+      done
+echo "# Save files. Please wait..."
+cd /var/ssd
+    gphoto2 --port ptpip:$camera_ip_adress --get-all-files --skip-existing
+    if [ "$?" -eq "0" ]; then 
+       zerofiles=$(find * -empty -type f | wc -l)
+       if [ "$zerofiles" -eq "0" ]; then
+          zenity --info --text="The files were backed up successfully" --width 600
+       else
+          zenity --error --text="$zerofiles files with 0 bytes found. Please check the backup." --width 600
+       fi
+       exit
+    else
+      zenity --error --text="Backup has been aborted or an error has occurred" --width 600
+      rm /tmp/gphoto2_wifi_camera.info
+      rm /var/ssd/tmpfile*
+      exit
+#    fi
+fi
+) | tee >(zenity --progress --pulsate --title="Creating backup" --text="Save files. Please wait..." --auto-close --auto-kill --width 600)
+
+else 
+ rm /tmp/gphoto2_wifi_camera.info #Info Daten löschen
+ exit 0
+fi
+exit
+
+

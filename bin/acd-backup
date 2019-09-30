@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+
+opt1="Create backup from Cardreader or USB connected camera"
+opt2="Create backup from Wifi connced camera"
+opt3="Create backup from SD-Cardreader (for large files)"
+
+
+text1="acd-backup=$opt1"
+text2="acd-backup=$opt2"
+text3="acd-backup=$opt3"
+
+config=`grep acd-backup= ~/.config/acd/settings`
+if [ "$?" -ne "0" ]; then
+  conf1="TRUE"
+  conf2="FALSE"
+  conf3="FALSE"
+  config=""
+else
+    echo $config
+    if [ "$config" == "$text1" ]; then
+       conf1="TRUE"
+       conf2="FALSE"
+       conf3="FALSE"
+    elif [ "$config" == "$text2" ]; then
+       conf1="FALSE"
+       conf2="TRUE"
+       conf3="FALSE"
+    elif [ "$config" == "$text3" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="TRUE"
+    else
+       zenity --warning --width=600 --text="No supported configuration found. Please select a configuration."
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+    fi 
+fi
+
+
+int=`zenity --height=260  --width=700   --title="Photo and Video backup"     --list --radiolist --text 'Select your backup option:' --column 'Option' --column 'Backup' $conf1 "$opt1" $conf2 "$opt2" $conf3 "$opt3"`
+
+if [ "$int" != "" ]; then
+   if [ "$int" == "$opt1" ]; then
+      #Default Backup
+      if [ "$config" == "" ]; then
+        # echo "Chosen option: "$int
+         echo "$text1" >> ~/.config/acd/settings
+      else
+         sed -i s/"$config"/"$text1"/g ~/.config/acd/settings
+         #echo "Chosen option: "$int
+      fi
+      acd-sd-card-camera_backup
+      exit
+   elif [ "$int" == "$opt2" ]; then
+      #WIFI Backup
+      if [ "$config" == "" ]; then
+         echo "$text2" >> ~/.config/acd/settings
+        # echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/"$text2"/g ~/.config/acd/settings
+        # echo "Chosen option: "$int
+      fi
+      acd-wifi-camera_backup
+      exit
+   elif [ "$int" == "$opt3" ]; then
+      #Rsync Backup
+      if [ "$config" == "" ]; then
+         echo "$text3" >> ~/.config/acd/settings
+         #echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/"$text3"/g ~/.config/acd/settings
+         #echo "Chosen option: "$int
+      fi
+      acd-sd-card_backup
+      exit
+   else
+     zenity --error --text="An unknown error has occurred"
+   fi
+fi
+

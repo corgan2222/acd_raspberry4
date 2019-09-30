@@ -1,0 +1,205 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+config=`grep acd-clean= ~/.config/acd/settings`
+if [ "$?" -ne "0" ]; then
+  conf1="TRUE"
+  conf2="FALSE"
+  conf3="FALSE"
+  conf4="FALSE"
+  conf5="FALSE"
+  conf6="FALSE"
+  conf7="FALSE"
+  config=""
+else
+    echo $config
+    if [ "$config" == "acd-clean=JPEG" ]; then
+       conf1="FALSE"
+       conf2="TRUE"
+       conf3="FALSE"
+       conf4="FALSE"
+       conf5="FALSE"
+       conf6="FALSE"
+       conf7="FALSE"
+    elif [ "$config" == "acd-clean=RAW" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="TRUE"
+       conf4="FALSE"
+       conf5="FALSE"
+       conf6="FLASE"
+       conf7="FALSE"
+    elif [ "$config" == "acd-clean=MOVIE" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+       conf4="TRUE"
+       conf5="FALSE"
+       conf6="FALSE"
+       conf7="FALSE"
+     elif [ "$config" == "acd-clean=EMPTY-FILES" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+       conf4="FALSE"
+       conf5="TRUE"
+       conf6="FALSE"
+       conf7="FALSE"
+     elif [ "$config" == "acd-clean=EMPTY-DIRECTORIES" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"    
+       conf4="FALSE"
+       conf5="FALSE"
+       conf6="TRUE"
+       conf7="FALSE"
+     elif [ "$config" == "acd-clean=TMP-FILES" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"    
+       conf4="FALSE"
+       conf5="FALSE"
+       conf6="FALSE" 
+       conf7="TRUE"
+    else
+       zenity --warning --text="No supported configuration found. Please select a configuration."
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+       conf4="FALSE"
+       conf5="FALSE"
+       conf6="FALSE"
+       conf7="FALSE"
+    fi
+  
+fi
+
+opt1="List all files"
+opt2="Remove all JPEG files"
+opt3="Remove all RAW files"
+opt4="Remove all movie files"
+opt5="Remove all empty files"
+opt6="Remove all empty directories"
+opt7="Remove all tmp files"
+
+int=`zenity --height=380 --list --radiolist --title="Remove files from SSD" --text 'Remove options:' --width 600 --column 'Select:' --column 'Discription:' $conf1 "$opt1" $conf2 "$opt2" $conf3 "$opt3" $conf4 "$opt4" $conf5 "$opt5" $conf6 "$opt6" $conf7 "$opt7"`
+
+if [ "$?" -eq "0" ]; then
+   if [ "$int" == "List all files" ]; then
+      cd /var/ssd
+      tree -P "*" >> /tmp/acd-clean-list
+      zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+      rm /tmp/acd-clean-list
+      if [ "$config" == "" ]; then
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"//g ~/.config/acd/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Remove all JPEG files" ]; then
+      cd /var/ssd
+      sudo find . -type f -name "*.jpg" -exec rm -f {} \;
+      sudo find . -type f -name "*.JPG" -exec rm -f {} \;
+      sudo find . -type f -name "*.jpeg" -exec rm -f {} \;
+      sudo find . -type f -name "*.JPEG" -exec rm -f {} \;
+      tree -P "*" >> /tmp/acd-clean-list
+      zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+      rm /tmp/acd-clean-list
+      if [ "$config" == "" ]; then
+         echo "acd-clean=JPEG" >> ~/.config/acd/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/acd-clean=JPEG/g ~/.config/acd/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Remove all RAW files" ]; then
+      cd /var/ssd
+      sudo find . -type f -name "*.cr2" -exec rm -f {} \;
+      sudo find . -type f -name "*.CR2" -exec rm -f {} \;
+      sudo find . -type f -name "*.cr3" -exec rm -f {} \;
+      sudo find . -type f -name "*.CR3" -exec rm -f {} \;
+      sudo find . -type f -name "*.nef" -exec rm -f {} \;
+      sudo find . -type f -name "*.NEF" -exec rm -f {} \;
+      tree -P "*" >> /tmp/acd-clean-list
+      zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+      rm /tmp/acd-clean-list
+      if [ "$config" == "" ]; then
+         echo "acd-clean=RAW" >> ~/.config/acd/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/acd-clean=RAW/g ~/.config/acd/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Remove all movie files" ]; then
+      cd /var/ssd
+      sudo find . -type f -name "*.mpg" -exec rm -f {} \;
+      sudo find . -type f -name "*.MPG" -exec rm -f {} \;
+      sudo find . -type f -name "*.mp4" -exec rm -f {} \;
+      sudo find . -type f -name "*.MP4" -exec rm -f {} \;
+      sudo find . -type f -name "*.mov" -exec rm -f {} \;
+      sudo find . -type f -name "*.MOV" -exec rm -f {} \;
+      sudo find . -type f -name "*.ts" -exec rm -f {} \;
+      sudo find . -type f -name "*.TS" -exec rm -f {} \;
+      sudo find . -type f -name "*.mkv" -exec rm -f {} \;
+      sudo find . -type f -name "*.MKV" -exec rm -f {} \;
+      sudo tree -P "*" >> /tmp/acd-clean-list
+      zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+      rm /tmp/acd-clean-list
+      if [ "$config" == "" ]; then
+         echo "acd-clean=MOVIE" >> ~/.config/acd/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/acd-clean=MOVIE/g ~/.config/acd/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Remove all empty files" ]; then
+      cd /var/ssd
+      sudo find ./ -type f -size 0 -delete
+      tree -P "*" >> /tmp/acd-clean-list
+      zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+      rm /tmp/acd-clean-list
+      if [ "$config" == "" ]; then
+         echo "acd-clean=EMPTY-FILES" >> ~/.config/acd/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/acd-clean=EMPTY-FILES/g ~/.config/acd/settings
+         echo "Chosen option: "$int
+      fi
+    elif [ "$int" == "Remove all empty directories" ]; then    
+       cd /var/ssd
+       sudo find ./ -depth -type d -empty -exec rmdir {} \;
+       tree -P "*" >> /tmp/acd-clean-list
+       zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+       rm /tmp/acd-clean-list
+       if [ "$config" == "" ]; then
+          echo "acd-clean=EMPTY-DIRECTORIES" >> ~/.config/acd/settings
+          echo "Chose option: "$int
+       else
+          sed -i s/"$config"/acd-clean=EMPTY-DIRECTORIES/g ~/.config/acd/settings
+          echo "Chosen option: "$int
+       fi
+ elif [ "$int" == "Remove all tmp files" ]; then    
+       cd /var/ssd
+       sudo find . -type f -name "tmpfile*" -exec rm -f {} \;
+       sudo tree -P "*" >> /tmp/acd-clean-list
+       zenity --text-info --title="Files at SSD" --width 600 --height 400 --filename=/tmp/acd-clean-list 
+       rm /tmp/acd-clean-list
+       if [ "$config" == "" ]; then
+          echo "acd-clean=TMP-FILES" >> ~/.config/acd/settings
+          echo "Chose option: "$int
+       else
+          sed -i s/"$config"/acd-clean=TMP-FILES/g ~/.config/acd/settings
+          echo "Chosen option: "$int
+       fi
+   else
+     zenity --error --text="An unknown error has occurred"
+   fi
+fi

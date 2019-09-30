@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# Check if ssd is ready
+if [ ! -e "/dev/acd-ssd" ]; then
+  zenity --error --width 600  --text="SSD not found. Please ckeck the usb connection and reboot the device." 
+  exit 1 
+else
+  grep /var/ssd /etc/mtab
+    if [ "$?" -ne "0" ]; then
+        /usr/bin/sudo -u pi /usr/bin/udisksctl mount -b /dev/acd-ssd
+        if [ "$?" -ne "0" ]; then
+          zenity --error --width 600  --text="SSD mounting not posible. Please ckeck the ssd." 
+          exit 1
+        fi
+    fi  
+fi
+
+# Check internet connection 
+(
+for (( y=1 ; y<31 ; y++ ))
+      do
+        ping -c 1 www.hidrive.strato.com 
+        if [ "$?" -eq "0" ]; then 
+         y=30
+        else
+          if [ "$y" -eq "30" ]; then
+            zenity --error --title="Strato HiDrive Upload"  --text="Connection to HiDrive Server not possible. Please check the internet connection." --width 600
+            sudo kill -9 $$
+          fi
+          sleep 1s
+        fi
+      done
+) | zenity --progress --title="Strato HiDrive Upload" --text="Check internet connection.." --pulsate --auto-kill --auto-close --width=600
+
+
+ENTRY=`zenity --forms --width=400 --title="Strato Hidrive Login" --ok-label="Start upload" --text="Enter user and password to login." --separator="," --add-entry="User" --add-entry="Password"`
+
+case $? in
+         0)
+	 	hidriveuser=`echo $ENTRY | cut -d',' -f1`	 	
+                hidrivepassword=`echo $ENTRY | cut -d',' -f2`
+                (sshpass -p "$hidrivepassword" rsync --exclude=Videos  --progress -avz -e ssh /var/ssd "$hidriveuser"@rsync.hidrive.strato.com:/users/"$hidriveuser"/acd-backup) | zenity --progress --title="Strato Hidrive Backup" --width=370 --text="Uploading files from SSD. Please wait..." --auto-close --auto-kill --pulsate
+                if [ "$?" -ne "0" ]; then
+                   zenity --info --title="Strato Hidrive Upload" --text="The upload was completed successfully" --width=250 2>/dev/null
+                else
+                   zenity --error --title="Strato Hidrive Upload" --text="An unexpected uploud error has occurred. Please check the user and password." --width=450 2>/dev/null
+                fi
+                ;;
+         1)
+                #zenity --info --title="Strato Hidrive Upload" --text="Upload stopped" --width=250 2>/dev/null
+                exit 1 
+                echo "Stop login.";;
+        -1)
+                zenity --error --title="Strato Hidrive Upload" --text="An unexpected error has occurred." --width=250 2>/dev/null
+                exit
+                echo "An unexpected error has occurred.";;
+esac
+
+
+

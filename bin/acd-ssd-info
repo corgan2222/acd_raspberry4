@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# Remove tmp file
+if [ -f /tmp/ssd.info ]
+   then
+   rm /tmp/ssd.info
+fi
+
+# check usb connection
+if [ -e "/dev/acd-ssd" ]; then
+  # check mount status
+  grep "/var/ssd" /etc/mtab 
+  if [ "$?" -eq "0" ]; then
+    device=$(grep "/var/ssd" /etc/mtab | cut -d ' ' -f 1) 
+    mountpoint=$(grep "$device" /etc/mtab | awk '{print $2}')
+    cd "$mountpoint"
+    #echo "ACD-1 Info:" > /tmp/ssd.info
+    #echo "---------------------------------------------" >> /tmp/ssd.info
+
+    label=$(lsblk -n -o label /dev/acd-ssd)
+    discspace=$(df -hm | grep "$device" | awk '{print $2}')
+    freediscspace=$(df -hm | grep "$device" | awk '{print $4}')
+    percentfreediscspace=$(df -hm | grep "$device" | awk '{print $5}')
+    countfiles=$(find $mountpoint -type f | wc -l)
+    count_jpeg_files=$(find $mountpoint -name "*.JPEG" -or -name "*.jpeg" -or -name "*.JPG" -or -name "*.jpg" | wc -l)
+    count_tiff_files=$(find $mountpoint -name "*.TIFF" -or -name "*.tiff" -or -name "*.TIF" -or -name "*.tif" | wc -l)
+    count_cr2_files=$(find $mountpoint -name "*.CR2" -or -name "*.cr2" | wc -l)
+    count_cr3_files=$(find $mountpoint -name "*.CR3" -or -name "*.cr3" | wc -l)
+    count_nef_files=$(find $mountpoint -name "*.NEF" -or -name "*.nef" | wc -l)
+    count_nrw_files=$(find $mountpoint -name "*.NRW" -or -name "*.nrw" | wc -l)
+    count_arw_files=$(find $mountpoint -name "*.ARW" -or -name "*.arw" | wc -l)
+    count_mpeg_files=$(find $mountpoint -name "*.MPG" -or -name "*.mpg" -or -name "*.MPEG" -or -name "*.mpeg" | wc -l)
+    count_mpeg4_files=$(find $mountpoint -name "*.MP4" -or -name "*.mp4" | wc -l)
+    count_mov_files=$(find $mountpoint -name "*.MOV" -or -name "*.mov" | wc -l)
+    echo "ssd device:       "$device > /tmp/ssd.info
+    echo "mounted at:     "$mountpoint >> /tmp/ssd.info
+    echo "label:                 "$label >> /tmp/ssd.info
+    echo "disc space:      "$discspace" Mb" >> /tmp/ssd.info
+    echo "free space:      "$freediscspace" Mb" >> /tmp/ssd.info
+    echo "used space:      "$percentfreediscspace >> /tmp/ssd.info
+    echo "total files; "$countfiles >> /tmp/ssd.info
+    if [ "$count_jpeg_files" -gt "0" ]; then
+     echo "jpeg files: "$count_jpeg_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_tiff_files" -gt "0" ]; then
+     echo "tiff files: "$count_tiff_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_cr2_files" -gt "0" ]; then
+     echo "canon cr2 files: "$count_cr2_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_cr3_files" -gt "0" ]; then
+     echo "canon cr3 files: "$count_cr3_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_nef_files" -gt "0" ]; then
+     echo "nikon nef files: "$count_nef_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_nrw_files" -gt "0" ]; then
+     echo "nikon nrw files: "$count_nrw_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_arw_files" -gt "0" ]; then
+     echo "sony arw files: "$count_arw_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_mpeg_files" -gt "0" ]; then
+     echo "mpeg video files: "$count_mpeg_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_mpeg4_files" -gt "0" ]; then
+     echo "mpeg4 video files: "$count_mpeg4_files >> /tmp/ssd.info
+    fi
+
+    if [ "$count_mov_files" -gt "0" ]; then
+     echo "mov video files: "$count_mov_files >> /tmp/ssd.info
+    fi
+    sudo smartctl -a -d sat $device | grep "overall-health" >> /tmp/ssd.info
+    zenity --text-info --title="ACD SSD info" --width 600 --height 380 --filename=/tmp/ssd.info  
+    rm /tmp/ssd.info
+
+  else
+    /usr/bin/sudo /usr/bin/udisksctl mount -b /dev/acd-ssd
+    if [ "$?" -eq "0" ]; then
+       acd-ssd-info
+    else
+       zenity --error --text="SSD mounting at /var/ssd not possible. Please check the mountpoint and SSD status." --width 600
+    fi
+
+  fi
+else
+  zenity --error --text="SSD not found. Please ckeck the usb connection." --width 600
+fi
+

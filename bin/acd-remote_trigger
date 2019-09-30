@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# Copyright (C) 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# USB Verbindung prüfen
+gphoto2 --auto-detect | grep usb #> /dev/null
+if [ "$?" -eq "0" ]; then
+  (
+  echo "# Checking usb connection..."
+  usb_connection=$(gphoto2 --auto-detect | grep usb)
+  echo "# Connected to $usb_connection"
+  echo "Connected to $usb_connection"
+  echo 50
+) |
+    # Zenity reads the data from the commands in the list above
+  zenity  --progress --title="USB remote trigger" --text="Start check..." --percentage=0 --width=600 --auto-kill --auto-close
+  zenity --question --title="USB remote trigger" --text="Do you want take a picture with USB connected camera?" --width 600
+  if [ "$?" -eq "0" ]; then
+       gphoto2 --auto-detect --trigger-capture
+       if [ "$?" -eq "0" ]; then
+         zenity --info --title="USB remote trigger"   --text="The camera was triggered successfully." --width 600
+         exit 0
+       else
+         zenity --error --title="USB remote trigger"  --text="An error has occurred. The camera could not be triggered.\nPlease check the camera settings." --width 600
+         sudo kill -9 $$
+       fi
+  else
+    sudo kill -9 $$
+  fi
+else
+#WLAN Verbindung prüfen
+  (
+  echo "# No USB connetion found. Checking wifi connection..." 
+  for (( i=1 ; i<51 ; i++ ))
+  do
+    iwgetid > /dev/null
+    if [ "$?" -eq "0" ]; then 
+      wlan_connection=$(iwgetid | cut -d \" -f2)
+      i=50
+      echo $(($i*2))
+    else
+      if [ "$i" -eq "50" ]; then
+         echo 100
+         zenity --error --title="Remote trigger"  --text="No USB and wifi connection found. Please check the camera connection." --width 600
+         sudo kill -9 $$
+      fi
+      sleep 1s
+      echo $(($i*2))
+    fi
+  done
+  echo "Connected to $wlan_connection"
+  echo "# Wifi connection $wlan_connection found"
+  echo 100
+  ) |
+  # Zenity reads the data from the commands in the list above
+  zenity  --progress --title="Wifi remote trigger" --text="Start check..." --percentage=0 --width=600 --auto-kill --auto-close
+
+  # Take a photo dialog
+  zenity --question --title="Wifi remote trigger" --text="Do you want take a picture with wifi connected camera?" --width 600
+  if [ "$?" -eq "0" ]; then
+   (
+     #IP Adresse der Kamera ermitteln
+     echo "# Identify camera ip adress..."
+     for (( k=1 ; k<51 ; k++ ))
+     do 
+       route > /dev/null
+       if [ "$?" -eq "0" ]; then 
+         camera_ip_adress=$(route | grep wlan0 | awk -F";" 'NR == 1 { print $1}' | awk '{print $2}')
+         k=50
+       else
+         if [ "$i" -eq "50" ]; then
+            zenity --error --title="Wifi remote trigger"  --text="No camera ip adress found. Please check the camera." --width 600 
+            sudo kill -9 $$
+         fi
+         sleep 1s
+         echo $k
+       fi
+      done
+      echo "# Checking wifi connection..."
+      for (( y=1 ; y<51 ; y++ ))
+      do
+        ping -c 1 $camera_ip_adress 
+        if [ "$?" -eq "0" ]; then 
+         y=60
+        else
+          if [ "$y" -eq "50" ]; then
+            zenity --error --title="Wifi remote trigger"  --text="Wi-Fi connection was interrupted. Please check the camera sleep function." --width 600
+            sudo kill -9 $$
+          fi
+          echo $(($y+$k))
+          sleep 1s
+        fi
+      done
+      echo "# Ready to take a picture..."
+      echo 100
+      ) |
+      zenity --progress --title="Wifi remote trigger" --percentage=0 --auto-kill --auto-close --width=600
+     # Kamera auslösen
+     camera_ip_adress=$(route | grep wlan0 | awk -F";" 'NR == 1 { print $1}' | awk '{print $2}')
+     gphoto2 --port ptpip:$camera_ip_adress --trigger-capture --set-config capturetarget=card
+       if [ "$?" -eq "0" ]; then
+          zenity --info --title="Wifi remote trigger"   --text="The camera was triggered successfully." --width 600
+          exit 0
+       else
+          zenity --error --title="Wifi remote trigger"  --text="An error has occurred. The camera could not be triggered.\nPlease check the camera settings." --width 600
+          sudo kill -9 $$
+       fi
+  fi
+fi

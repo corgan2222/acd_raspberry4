@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=ACD Info Hardware
+Comment=Shows information about the Advanced Camera Device
+Icon=/usr/share/pixmaps/acd-hardware.xpm
+Exec=/usr/bin/acd-hardware-info
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=GTK;System;TerminalEmulator;

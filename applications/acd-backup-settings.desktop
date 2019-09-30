@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Photo/Video Filename Settings
+Comment=Backup filename configuration
+Icon=/usr/share/pixmaps/acd-filename-settings.xpm
+Exec=/usr/bin/acd-backup-settings
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=GTK;Settings;TerminalEmulator;

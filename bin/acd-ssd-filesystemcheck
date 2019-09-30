@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+if [ -e "/dev/acd-ssd" ]; then
+    grep "/var/ssd" /etc/mtab
+    if [ "$?" -eq "0" ]; then 
+       /usr/bin/sudo /usr/bin/udisksctl unmount -b /dev/acd-ssd
+         if [ "$?" -eq "0" ]; then
+           filecheck=$(sudo fsck.exfat /dev/acd-ssd)
+           zenity --info --title="ACD SSD filesystemcheck" --width 500 --text="$filecheck"
+           /usr/bin/sudo /usr/bin/udisksctl mount -b /dev/acd-ssd
+             if [ "$?" -ne "0" ]; then
+              zenity --error --text="SSD mounting not possible."
+             fi
+         else
+           zenity --error --text="SSD is busy. Filesystemcheck not possible"
+         fi
+    else
+       filecheck=$(sudo fsck.exfat /dev/acd-ssd)
+       zenity --info --title="ACD SSD filesystemcheck" --width 500 --text="$filecheck"
+       /usr/bin/sudo /usr/bin/udisksctl mount -b /dev/acd-ssd
+         if [ "$?" -ne "0" ]; then
+           zenity --error --text="SSD mounting not possible."
+         fi
+    fi
+else 
+  zenity --error --text="SSD with not found. Please check the USB connection" --width 500
+fi 

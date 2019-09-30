@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+if [ ! -e "/dev/acd-ssd"  ]; then
+zenity --error --text="SSD not found. Please check the USB connection and reboot the device after usb plugin." --title="SSD ERROR" --width 500
+fi

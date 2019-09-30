@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=ACD-1 Advanced Cardreader Backup
+Comment=Make a backup of your pictures / videos
+Icon=/usr/share/pixmaps/acd-backup.xpm
+Exec=/usr/bin/acd-sd-card_backup
+Type=Application
+Encoding=UTF-8
+Terminal=true
+StartupNotify=true
+Categories=GTK;System;TerminalEmulator;
+MimeType=inode/directory;image/jpeg;image/tiff;image/x-canon-cr2;image/x-nikon-nef;
+

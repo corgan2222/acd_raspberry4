@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# Copyright (C) 2018, 2019 Holger Klemm
+#
+# This file is part of the ACD-OS distribution.
+#
+# This script is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+config=`grep gphoto2=filename= ~/.gphoto/settings`
+if [ "$?" -ne "0" ]; then
+  conf1="TRUE"
+  conf2="FALSE"
+  conf3="FALSE"
+  conf4="FALSE"
+  conf5="FALSE"
+  config=""
+else
+    echo $config
+    if [ "$config" == "gphoto2=filename=%:" ]; then
+       conf1="FALSE"
+       conf2="TRUE"
+       conf3="FALSE"
+       conf4="FALSE"
+       conf5="FALSE"
+    elif [ "$config" == "gphoto2=filename=%Y-%m-%d_%H:%M:%S.%C" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="TRUE"
+       conf4="FALSE"
+       conf5="FALSE"
+    elif [ "$config" == "gphoto2=filename=%d-%m-%y@%H%M%S.%C" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+       conf4="TRUE"
+       conf5="FALSE"
+     elif [ "$config" == "gphoto2=filename=%y%m%d-%04n.%C" ]; then
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+       conf4="FALSE"
+       conf5="TRUE"
+    else
+       zenity --warning --text="No supported configuration found. Please select a configuration."
+       conf1="FALSE"
+       conf2="FALSE"
+       conf3="FALSE"
+       conf4="FALSE"
+       conf5="FALSE"
+    fi
+  
+fi
+
+opt1="No filename change"
+opt2="Convert filename to lower case (default)"
+opt3="Convert filename to YYYY-MM-DD_hh:mm:ss.suffix"
+opt4="Convert filename to DD-MM-YY@hhmmss.suffix"
+opt5="Convert filename to YYYYMMDD-####.suffix"
+
+int=`zenity --height=350 --list --radiolist --title="Backup filename settings" --text 'Filename settings:' --width 600 --column 'Select:' --column 'Filename discription:' $conf1 "$opt1" $conf2 "$opt2" $conf3 "$opt3" $conf4 "$opt4" $conf5 "$opt5"`
+
+if [ "$?" -eq "0" ]; then
+   if [ "$int" == "No filename change" ]; then
+      if [ "$config" == "" ]; then
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"//g ~/.gphoto/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Convert filename to lower case (default)" ]; then
+      if [ "$config" == "" ]; then
+         echo "gphoto2=filename=%:" >> ~/.gphoto/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/gphoto2=filename=%:/g ~/.gphoto/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Convert filename to YYYY-MM-DD_hh:mm:ss.suffix" ]; then
+      if [ "$config" == "" ]; then
+         echo "gphoto2=filename=%Y-%m-%d_%H:%M:%S.%C" >> ~/.gphoto/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/gphoto2=filename=%Y-%m-%d_%H:%M:%S.%C/g ~/.gphoto/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Convert filename to DD-MM-YY@hhmmss.suffix" ]; then
+      if [ "$config" == "" ]; then
+         echo "gphoto2=filename=%d-%m-%y@%H%M%S.%C" >> ~/.gphoto/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/gphoto2=filename=%d-%m-%y@%H%M%S.%C/g ~/.gphoto/settings
+         echo "Chosen option: "$int
+      fi
+   elif [ "$int" == "Convert filename to YYYYMMDD-####.suffix" ]; then
+      if [ "$config" == "" ]; then
+         echo "gphoto2=filename=%y%m%d-%04n.%C" >> ~/.gphoto/settings
+         echo "Chosen option: "$int
+      else
+         sed -i s/"$config"/gphoto2=filename=%y%m%d-%04n.%C/g ~/.gphoto/settings
+         echo "Chosen option: "$int
+      fi
+   
+   else
+     zenity --error --text="An unknown error has occurred"
+   fi
+fi
