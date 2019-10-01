@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=SSD Format
 Comment=Formats the internal SSD
-Icon=/usr/share/pixmaps/acd-ssd-format.xpm
-Exec=/usr/bin/acd-ssd-format
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-ssd-format.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-ssd-format
 Type=Application
 Encoding=UTF-8
 Terminal=false

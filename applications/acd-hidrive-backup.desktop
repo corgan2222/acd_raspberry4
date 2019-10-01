@@ -2,8 +2,8 @@
 Type=Application
 Name=Transfer SSD data to Strato Hidrive cloud
 Comment=Copy pictures / videos to your hidrive
-Icon=/usr/share/pixmaps/acd-backup.xpm
-Exec=/usr/bin/acd-hidrive-backup
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-backup.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-hidrive-backup
 Type=Application
 Encoding=UTF-8
 Terminal=false

@@ -2,8 +2,8 @@
 Type=Application
 Name=Camera/Cardreader Backup
 Comment=Make a backup of your pictures / videos
-Icon=/usr/share/pixmaps/acd-backup.xpm
-Exec=/usr/bin/acd-backup
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-backup.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-backup
 Type=Application
 Encoding=UTF-8
 Terminal=false

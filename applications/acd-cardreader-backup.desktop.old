@@ -2,8 +2,8 @@
 Type=Application
 Name=ACD-1 Advanced Cardreader Backup
 Comment=Make a backup of your pictures / videos
-Icon=/usr/share/pixmaps/acd-backup.xpm
-Exec=/usr/bin/acd-sd-card_backup
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-backup.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-sd-card_backup
 Type=Application
 Encoding=UTF-8
 Terminal=true

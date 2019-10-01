@@ -11,6 +11,6 @@ Comment[ru]=Виртуальная Клавиатура Florence
 Exec=florence
 Terminal=false
 Type=Application
-Icon=/usr/share/pixmaps/florence.svg
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/florence.svg
 Categories=Application;System;
 

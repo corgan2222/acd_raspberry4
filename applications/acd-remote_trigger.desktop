@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=USB/Wifi Remote trigger
 Comment=Triggers the camera over USB-cable or Wifi
-Icon=/usr/share/pixmaps/acd-remote-trigger.xpm
-Exec=/usr/bin/acd-remote_trigger
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-remote-trigger.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-remote_trigger
 Type=Application
 Encoding=UTF-8
 Terminal=false

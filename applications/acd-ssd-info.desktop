@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=SSD Info
 Comment=Shows information about the internal SSD
-Icon=/usr/share/pixmaps/acd-ssd-info.xpm
-Exec=/usr/bin/acd-ssd-info
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-ssd-info.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-ssd-info
 Type=Application
 Encoding=UTF-8
 Terminal=false

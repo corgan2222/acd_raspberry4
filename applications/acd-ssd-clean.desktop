@@ -2,11 +2,11 @@
 Name=SSD Clean
 Name[de]=SSD Reiniger
 GenericName=SSD Data remover
-GenericName[de]=SSD Daten löscher
+GenericName[de]=SSD Daten lÃ¶schen
 Comment=View and manage images
 Comment[de]=Betrachte und manage Bilder
-Exec=acd-ssd-clean
-Icon=acd-ssd-clean.xpm
+Exec=/home/pi/git/acd_raspberry4/bin/acd-ssd-clean
+Icon=/home/pi/git/acd_raspberry4/share/pixmaps/acd-ssd-clean.xpm
 Type=Application
 Terminal=false
 Categories=Utility;
